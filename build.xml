@@ -2,6 +2,10 @@
 
 <project name="accesslog" default="build" basedir=".">
 
+    <property environment="env"/>
+    <property name="play.path" value="${env.PLAY_PATH}"/>
+    <import file="${play.path}/resources/inativ-build.xml"/>
+
     <target name="check" unless="play.path">
         <fail message="Please specify Play framework path using -Dplay.path=/path/to/framework/home" />
     </target>
@@ -20,6 +24,7 @@
     </path>
 
     <target name="build" depends="compile">
+        <mkdir dir="lib" />
         <copy todir="tmp/classes">
             <fileset dir="src">
                 <include name="**/*.properties"/>
@@ -45,4 +50,5 @@
         </javac>
     </target>
 
+    <target name="js-test"/>
 </project>
