@@ -6,7 +6,6 @@ logs
 server.pid
 *.ser
 
-lib
 
 # IntelliJ
 *.iml
