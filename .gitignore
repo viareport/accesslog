@@ -5,10 +5,16 @@ out
 logs
 server.pid
 *.ser
-
+lib/*
 
 # IntelliJ
 *.iml
 *.ipr
 *.iws
 .idea/
+
+# Eclipse
+.classpath
+.project
+.settings
+eclipse/*
