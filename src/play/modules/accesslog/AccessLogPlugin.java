@@ -76,6 +76,7 @@ public class AccessLogPlugin extends PlayPlugin
     @Override
     public void invocationFinally()
     {
+        play.Logger.info("AccessLogPlugin log");
         log();
     }
 
