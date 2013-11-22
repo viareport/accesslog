@@ -13,11 +13,14 @@
 package play.modules.accesslog;
 
 import java.io.File;
+import java.util.Locale;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.FileAppender;
 import org.apache.log4j.Logger;
 import org.jboss.netty.handler.codec.http.HttpHeaders;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 
 import play.Play;
 import play.PlayPlugin;
@@ -35,8 +38,11 @@ public class AccessLogPlugin extends PlayPlugin
     private boolean _shouldLog2Play;
     private boolean _shouldLogPost;
     private File _logFile;
-    private static Logger ACCESS_LOGGER; 
-    
+    private static Logger ACCESS_LOGGER;
+
+    // Date format used by CLF in Apacge access.log
+    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormat
+        .forPattern("dd/MMM/yyyy:HH:mm:ss Z").withLocale(Locale.US);
 
     @Override
     public void onConfigurationRead()
@@ -53,13 +59,12 @@ public class AccessLogPlugin extends PlayPlugin
         {
             _logFile = new File(play.Play.applicationPath, _logFile.getPath());
         }
-        
-        
+
     }
 
     private static Logger configureLogger(File logFile) {
         Logger accessLogger = Logger.getLogger("AccessLogPlugin");
-        if (! accessLogger.getAllAppenders().hasMoreElements()) {
+        if (!accessLogger.getAllAppenders().hasMoreElements()) {
             FileAppender fileAppdr = new FileAppender();
             fileAppdr.setFile(logFile.getPath());
             accessLogger.addAppender(fileAppdr);
@@ -77,7 +82,11 @@ public class AccessLogPlugin extends PlayPlugin
     public void invocationFinally()
     {
         play.Logger.info("AccessLogPlugin log");
-        log();
+        try {
+            log();
+        } catch (Exception e) {
+            play.Logger.error(e, "Cannot log request");
+        }
     }
 
     private synchronized void log()
@@ -86,7 +95,7 @@ public class AccessLogPlugin extends PlayPlugin
         {
             return;
         }
-        
+
         Http.Request request = Http.Request.current();
         Http.Response response = Http.Response.current();
         if (request == null || response == null)
@@ -113,7 +122,6 @@ public class AccessLogPlugin extends PlayPlugin
         String line = getInfoLine(request, getUserName(request), status, bytes,
             getReferrer(request), getUserAgent(request), String.valueOf(requestProcessingTime));
 
-
         if (_shouldLogPost && request.method.equals("POST")) {
             line = appendPostPayLoad(request, line);
         }
@@ -136,7 +144,7 @@ public class AccessLogPlugin extends PlayPlugin
 
         if (StringUtils.isNotEmpty(body))
         {
-            line = line + " \""+ body + "\"";
+            line = line + " \"" + body + "\"";
         } else {
             line = line + " \"\"";
         }
@@ -149,8 +157,8 @@ public class AccessLogPlugin extends PlayPlugin
         line = StringUtils.replaceOnce(line, "%v", request.host);
         line = StringUtils.replaceOnce(line, "%h", request.remoteAddress);
         line = StringUtils.replaceOnce(line, "%u", userName);
-        line = StringUtils.replaceOnce(line, "%t", request.date.toString());
-        line = StringUtils.replaceOnce(line, "%r", request.url);
+        line = StringUtils.replaceOnce(line, "%t", DATE_FORMATTER.print(request.date.getTime()));
+        line = StringUtils.replaceOnce(line, "%r", request.method + " " + request.url);
         line = StringUtils.replaceOnce(line, "%s", status);
         line = StringUtils.replaceOnce(line, "%b", bytes);
         line = StringUtils.replaceOnce(line, "%ref", referrer);
