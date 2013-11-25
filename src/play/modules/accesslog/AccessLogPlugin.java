@@ -81,7 +81,7 @@ public class AccessLogPlugin extends PlayPlugin
     @Override
     public void invocationFinally()
     {
-        play.Logger.info("AccessLogPlugin log");
+        play.Logger.trace("****** AccessLogPlugin log ******");
         try {
             log();
         } catch (Exception e) {
