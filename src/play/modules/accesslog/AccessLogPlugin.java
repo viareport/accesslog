@@ -79,15 +79,29 @@ public class AccessLogPlugin extends PlayPlugin
     }
 
     @Override
-    public void invocationFinally()
+    public void onInvocationSuccess()
     {
-        play.Logger.trace("****** AccessLogPlugin log ******");
+        play.Logger.trace("****** AccessLogPlugin success log ******");
+        
         try {
             log();
         } catch (Exception e) {
             play.Logger.error(e, "Cannot log request");
         }
     }
+    
+    @Override
+    public void onInvocationException(Throwable e) {
+        play.Logger.trace("****** AccessLogPlugin error log ******");
+        
+        try {
+            Http.Response.current().status = 500;
+            log();
+        } catch (Exception logExp) {
+            play.Logger.error(logExp, "Cannot log request");
+        }
+    }
+  
 
     private synchronized void log()
     {
@@ -106,14 +120,14 @@ public class AccessLogPlugin extends PlayPlugin
         long requestProcessingTime = System.currentTimeMillis() - request.date.getTime();
 
         String bytes = "-";
-        String status = "-";
+        String status = response.status != null ? response.status.toString() : "-";
 
         /*
          * It seems as though the Response.current() is only valid when the request is handled by a controller
          * Serving static files, static 404's and 500's etc don't populate the same Response.current()
          * This prevents us from getting the bytes sent and response status all of the time
          */
-        if (request.action != null && response.out.size() > 0)
+        if (request.action != null && response.out.size() > 0 && response.status != 500)
         {
             bytes = String.valueOf(response.out.size());
             status = response.status.toString();
@@ -185,4 +199,5 @@ public class AccessLogPlugin extends PlayPlugin
         }
         return (StringUtils.isEmpty(userName)) ? "-" : userName;
     }
+
 }
