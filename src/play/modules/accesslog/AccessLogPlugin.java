@@ -195,7 +195,7 @@ public class AccessLogPlugin extends PlayPlugin
         String userName = request.user;
         if (StringUtils.isEmpty(userName)) {
             Session currentSession = Session.current();
-            userName = currentSession == null ? null : currentSession.get("username");
+            userName = currentSession == null ? null : currentSession.get("login");
         }
         return (StringUtils.isEmpty(userName)) ? "-" : userName;
     }
