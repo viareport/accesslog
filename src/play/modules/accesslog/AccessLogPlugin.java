@@ -27,8 +27,7 @@ import play.PlayPlugin;
 import play.mvc.Http;
 import play.mvc.Scope.Session;
 
-public class AccessLogPlugin extends PlayPlugin
-{
+public class AccessLogPlugin extends PlayPlugin {
     // vhost remoteAddress - requestUser [time] "requestUrl" status bytes "referrer" "userAgent" requestTime
     // "POST"
     private static final String FORMAT = "%v %h - %u [%t] \"%r\" %s %b \"%ref\" \"%ua\" %rt";
@@ -45,8 +44,7 @@ public class AccessLogPlugin extends PlayPlugin
         .forPattern("dd/MMM/yyyy:HH:mm:ss Z").withLocale(Locale.US);
 
     @Override
-    public void onConfigurationRead()
-    {
+    public void onConfigurationRead() {
         _shouldLog2Play = Boolean.parseBoolean(Play.configuration.getProperty(CONFIG_PREFIX + "log2play",
             "false"));
         _shouldLogPost = Boolean.parseBoolean(Play.configuration.getProperty(CONFIG_PREFIX + "logpost",
@@ -55,8 +53,7 @@ public class AccessLogPlugin extends PlayPlugin
         _enabled = Boolean.parseBoolean(Play.configuration.getProperty(CONFIG_PREFIX + "enabled",
             "true"));
 
-        if (!_logFile.isAbsolute())
-        {
+        if (!_logFile.isAbsolute()) {
             _logFile = new File(play.Play.applicationPath, _logFile.getPath());
         }
 
@@ -73,27 +70,25 @@ public class AccessLogPlugin extends PlayPlugin
     }
 
     @Override
-    public void onApplicationStart()
-    {
+    public void onApplicationStart() {
         ACCESS_LOGGER = configureLogger(_logFile);
     }
 
     @Override
-    public void onInvocationSuccess()
-    {
+    public void onInvocationSuccess() {
         play.Logger.trace("****** AccessLogPlugin success log ******");
-        
+
         try {
             log();
         } catch (Exception e) {
             play.Logger.error(e, "Cannot log request");
         }
     }
-    
+
     @Override
     public void onInvocationException(Throwable e) {
         play.Logger.trace("****** AccessLogPlugin error log ******");
-        
+
         try {
             Http.Response.current().status = 500;
             log();
@@ -101,19 +96,15 @@ public class AccessLogPlugin extends PlayPlugin
             play.Logger.error(logExp, "Cannot log request");
         }
     }
-  
 
-    private synchronized void log()
-    {
-        if (!_shouldLog2Play && !_enabled)
-        {
+    private synchronized void log() {
+        if (!_shouldLog2Play && !_enabled) {
             return;
         }
 
         Http.Request request = Http.Request.current();
         Http.Response response = Http.Response.current();
-        if (request == null || response == null)
-        {
+        if (request == null || response == null) {
             return;
         }
 
@@ -127,8 +118,7 @@ public class AccessLogPlugin extends PlayPlugin
          * Serving static files, static 404's and 500's etc don't populate the same Response.current()
          * This prevents us from getting the bytes sent and response status all of the time
          */
-        if (request.action != null && response.out.size() > 0 && response.status != 500)
-        {
+        if (request.action != null && response.out.size() > 0 && response.status != 500) {
             bytes = String.valueOf(response.out.size());
             status = response.status.toString();
         }
@@ -142,13 +132,11 @@ public class AccessLogPlugin extends PlayPlugin
 
         line = StringUtils.trim(line);
 
-        if (_enabled)
-        {
+        if (_enabled) {
             ACCESS_LOGGER.info(line);
         }
 
-        if (_shouldLog2Play)
-        {
+        if (_shouldLog2Play) {
             play.Logger.info(line);
         }
     }
@@ -156,8 +144,7 @@ public class AccessLogPlugin extends PlayPlugin
     private String appendPostPayLoad(Http.Request request, String line) {
         String body = request.params.get("body");
 
-        if (StringUtils.isNotEmpty(body))
-        {
+        if (StringUtils.isNotEmpty(body)) {
             line = line + " \"" + body + "\"";
         } else {
             line = line + " \"\"";
@@ -192,10 +179,14 @@ public class AccessLogPlugin extends PlayPlugin
     }
 
     private String getUserName(Http.Request request) {
-        String userName = request.user;
-        if (StringUtils.isEmpty(userName)) {
-            Session currentSession = Session.current();
-            userName = currentSession == null ? null : currentSession.get("login");
+        String userName = null;
+        Session currentSession = Session.current();
+        if (currentSession != null) {
+            if (currentSession.contains("mandataire")) {
+                userName = currentSession.get("mandataire") + " as " + currentSession.get("mandant");
+            } else {
+                userName = currentSession.get("login");
+            }
         }
         return (StringUtils.isEmpty(userName)) ? "-" : userName;
     }
